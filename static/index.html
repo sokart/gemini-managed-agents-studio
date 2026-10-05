@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Managed Agents Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Marked for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Highlight.js for Code Highlighting & Language Auto-detection -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-hidden bg-slate-950 text-slate-100">
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 border-b border-slate-800 bg-slate-900/80 backdrop-blur px-5 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-robot text-white text-base"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold text-white tracking-tight">Gemini Managed Agents Studio</h1>
+          <span class="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Preview</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Agent Platform &bull; Antigravity Harness &bull; Autonomous Sandbox</p>
+      </div>
+    </div>
+
+    <!-- Project & Environment Info -->
+    <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+        <span class="text-slate-400"><i class="fa-solid fa-cloud text-blue-400 mr-1"></i>Project:</span>
+        <span id="headerProject" class="font-mono font-medium text-slate-200">sokratis-genai-bb</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+        <span class="text-slate-400"><i class="fa-solid fa-globe text-emerald-400 mr-1"></i>Region:</span>
+        <span id="headerLocation" class="font-mono font-medium text-slate-200">global</span>
+      </div>
+      <div id="connectionStatus" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Body Layout -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT COLUMN: Available Agents List -->
+    <aside id="leftPanel" class="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col shrink-0 overflow-hidden">
+      <!-- Agents Header -->
+      <div class="p-3.5 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-users-gear text-blue-400 text-sm"></i>
+          <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Agents</span>
+          <span id="agentsCountBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">0</span>
+        </div>
+        <button id="btnRefreshAgents" title="Refresh available agents" class="p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition text-xs">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+
+      <!-- Agent Search / Filter Input -->
+      <div class="p-2.5 border-b border-slate-800/80 bg-slate-950/40 shrink-0">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-[11px] text-slate-500"></i>
+          <input
+            id="agentSearchInput"
+            type="text"
+            placeholder="Search agents..."
+            class="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
+          >
+        </div>
+      </div>
+
+      <!-- Scrollable Agents List Container -->
+      <div id="agentsListContainer" class="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar">
+        <!-- Rendered dynamically via JavaScript:
+             - Base agent (antigravity-preview-05-2026) with bolt icon and active styling
+             - Custom agents with robot icon and trash/delete button
+        -->
+        <div class="p-4 text-center text-slate-500 text-xs">
+          <i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading agents...
+        </div>
+      </div>
+
+      <!-- Bottom Pinned Action: Create a New Agent Button -->
+      <div class="p-3 border-t border-slate-800 bg-slate-900/80 shrink-0">
+        <button
+          id="btnOpenCreateAgentModal"
+          type="button"
+          class="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2 group"
+        >
+          <i class="fa-solid fa-plus text-xs group-hover:scale-110 transition-transform"></i>
+          <span>Create a New Agent</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MIDDLE COLUMN: Interactive Chat Space (Updates on Agent Select) -->
+    <main id="chatPane" class="flex-1 flex flex-col bg-slate-950 min-w-0 relative overflow-hidden border-r border-slate-800">
+      
+      <!-- Session Bar / Active Agent Header -->
+      <div class="h-14 border-b border-slate-800/80 bg-slate-900/40 px-5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <!-- Active Agent Icon & Name -->
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="activeAgentAvatar" class="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+              <i class="fa-solid fa-bolt text-xs"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span id="activeAgentTitle" class="text-xs font-bold text-white font-mono truncate">antigravity-preview-05-2026</span>
+                <span id="activeAgentTypeBadge" class="px-1.5 py-0.2 text-[10px] rounded font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider shrink-0">Base Agent</span>
+              </div>
+              <p id="activeAgentSubtitle" class="text-[10px] text-slate-400 truncate">Direct harness &bull; Autonomous remote sandbox</p>
+            </div>
+          </div>
+
+          <div class="h-4 w-px bg-slate-800 shrink-0 mx-1"></div>
+
+          <!-- Sandbox Status Pill -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[11px] text-slate-400">Sandbox:</span>
+            <span id="activeEnvBadge" class="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono font-medium max-w-[170px] truncate" title="None yet (will allocate on first turn)">None (New)</span>
+          </div>
+        </div>
+
+        <!-- Chat Actions -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btnNewSession" title="Reset session & allocate a fresh sandbox container" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-rotate-left text-slate-400 text-xs"></i>
+            <span>New Sandbox</span>
+          </button>
+          <button id="btnClearChat" title="Clear messages for current agent" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs transition">
+            <i class="fa-solid fa-broom"></i>
+          </button>
+          <button id="btnToggleRightPanel" title="Toggle Sandbox Files & Inspector Panel" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-300 text-xs transition flex items-center gap-1">
+            <i class="fa-solid fa-sidebar text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream Container -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+
+        <!-- Welcome Message Banner -->
+        <div id="welcomeCard" class="max-w-2xl mx-auto p-6 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/40 border border-slate-800 text-center space-y-3.5">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-xl shadow-blue-500/20">
+            <i id="welcomeCardIcon" class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <h3 id="welcomeCardTitle" class="text-base font-bold text-white tracking-tight">Active: antigravity-preview-05-2026</h3>
+            <p id="welcomeCardDesc" class="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+              Your agent runs in a secure remote Linux sandbox with integrated Python code execution, bash terminal, live web search, and persistent filesystem state.
+            </p>
+          </div>
+
+          <!-- Quick Starter Prompts -->
+          <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+            <button class="quick-prompt p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group">
+              <div class="font-semibold text-blue-400 mb-0.5 group-hover:text-blue-300 flex items-center gap-1">
+                <i class="fa-solid fa-microchip text-[11px]"></i> Benchmark Sandbox
+              </div>
+              <div class="text-[10px] text-slate-400">Run a Python benchmark and report CPU & memory in the sandbox.</div>
+            </button>
+
+            <button class="quick-prompt p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group">
+              <div class="font-semibold text-emerald-400 mb-0.5 group-hover:text-emerald-300 flex items-center gap-1">
+                <i class="fa-solid fa-file-code text-[11px]"></i> Multi-turn File State
+              </div>
+              <div class="text-[10px] text-slate-400">Create a file called 'notes.txt', write sample data, and read it back.</div>
+            </button>
+
+            <button class="quick-prompt p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group">
+              <div class="font-semibold text-purple-400 mb-0.5 group-hover:text-purple-300 flex items-center gap-1">
+                <i class="fa-brands fa-google text-[11px]"></i> Web Search Grounding
+              </div>
+              <div class="text-[10px] text-slate-400">Search the web for the latest Gemini Enterprise updates.</div>
+            </button>
+
+            <button class="quick-prompt p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group">
+              <div class="font-semibold text-amber-400 mb-0.5 group-hover:text-amber-300 flex items-center gap-1">
+                <i class="fa-solid fa-chart-line text-[11px]"></i> Data Analysis
+              </div>
+              <div class="text-[10px] text-slate-400">Generate a synthetic dataset and analyze summary statistics in Python.</div>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Chat Input Bar -->
+      <div class="border-t border-slate-800 bg-slate-900/60 backdrop-blur p-3.5 px-5 shrink-0">
+        <form id="chatForm" class="max-w-4xl mx-auto flex items-end gap-2.5">
+          <div class="flex-1 relative bg-slate-950 border border-slate-800 focus-within:border-blue-500 rounded-xl transition shadow-inner">
+            <textarea
+              id="messageInput"
+              rows="1"
+              placeholder="Ask the active agent to execute code, browse the web, create files, or analyze data..."
+              class="w-full bg-transparent p-3 pr-9 text-xs text-slate-100 placeholder-slate-500 focus:outline-none resize-none max-h-36 custom-scrollbar leading-relaxed"
+            ></textarea>
+            <div class="absolute right-2.5 bottom-2.5 text-slate-500">
+              <i class="fa-solid fa-terminal text-[11px]"></i>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="btnSendMessage"
+            class="h-10 w-10 rounded-xl bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+
+          <button
+            type="button"
+            id="btnStopGeneration"
+            class="hidden h-10 w-10 rounded-xl bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600 text-rose-300 hover:text-white flex items-center justify-center shrink-0 transition-all"
+            title="Stop Generation"
+          >
+            <i class="fa-solid fa-stop text-xs"></i>
+          </button>
+        </form>
+
+        <div class="max-w-4xl mx-auto mt-2 flex items-center justify-between text-[10px] text-slate-500">
+          <span>Tip: Press <kbd class="px-1 py-0.5 rounded bg-slate-800 font-mono text-slate-400">Enter</kbd> to send, <kbd class="px-1 py-0.5 rounded bg-slate-800 font-mono text-slate-400">Shift + Enter</kbd> for newline</span>
+          <span id="turnInfo" class="font-mono">Turn: 0</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Resizer Divider for Right Panel -->
+    <div
+      id="rightPanelResizer"
+      class="w-1.5 hover:w-2.5 bg-slate-800/80 hover:bg-blue-500 active:bg-blue-600 cursor-col-resize shrink-0 transition-all duration-150 relative z-20 select-none flex items-center justify-center group"
+      title="Drag left or right to resize panel"
+    >
+      <div class="w-0.5 h-8 rounded-full bg-slate-600 group-hover:bg-white group-active:bg-white transition-colors pointer-events-none"></div>
+    </div>
+
+    <!-- RIGHT COLUMN: Inspector with Tabs: [📁 Sandbox Files] | [⚙️ Configure Active Agent] -->
+    <aside id="rightPanel" class="w-[560px] bg-slate-900/40 flex flex-col shrink-0 overflow-hidden relative">
+      
+      <!-- Right Panel Tab Switcher Header -->
+      <div class="h-14 border-b border-slate-800 bg-slate-900/80 px-4 flex items-center justify-between shrink-0">
+        <!-- Segmented Tabs -->
+        <div class="flex items-center p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-medium">
+          <button id="tabFilesBtn" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-folder-tree text-emerald-400"></i>
+            <span>Sandbox Files</span>
+            <span id="filesCountBadge" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-900/80 text-emerald-300 font-mono">0</span>
+          </button>
+          <button id="tabConfigBtn" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-blue-400"></i>
+            <span>Configure Agent</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btnCloseRightPanel" title="Close inspector panel" class="p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB VIEW 1: Sandbox Files & Code Editor -->
+      <div id="rightTabFiles" class="flex-1 flex overflow-hidden">
+        
+        <!-- File Tree Sub-column (w-52) -->
+        <div class="w-52 border-r border-slate-800 bg-slate-900/30 flex flex-col shrink-0 overflow-hidden">
+          <!-- Tree Toolbar -->
+          <div class="p-2.5 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Workspace</span>
+            <div class="flex items-center gap-1">
+              <button id="btnSyncSandboxFiles" title="Sync files directly from sandbox container" class="p-1 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800 transition text-xs">
+                <i id="syncIcon" class="fa-solid fa-arrows-rotate"></i>
+              </button>
+              <button id="btnNewSandboxFile" title="Create a new file in sandbox" class="p-1 text-slate-400 hover:text-blue-400 rounded hover:bg-slate-800 transition text-xs">
+                <i class="fa-solid fa-file-circle-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- File Filter Input -->
+          <div class="p-2 border-b border-slate-800/80 bg-slate-950/40">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-2 top-2 text-[10px] text-slate-500"></i>
+              <input
+                id="fileSearchInput"
+                type="text"
+                placeholder="Filter files..."
+                class="w-full bg-slate-900 border border-slate-800 rounded px-2 pl-6 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              >
+            </div>
+          </div>
+
+          <!-- File Tree List -->
+          <div id="fileTreeContainer" class="flex-1 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar text-xs">
+            <div class="p-3 text-center text-slate-500 text-xs space-y-1">
+              <i class="fa-solid fa-inbox text-base opacity-40"></i>
+              <p>No sandbox files discovered yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Editor Sub-column (flex-1) -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+          <!-- Editor Header -->
+          <div id="editorHeader" class="h-10 border-b border-slate-800 bg-slate-900/60 px-3 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2 overflow-hidden">
+              <span id="editorFileIcon" class="text-slate-400 text-xs"><i class="fa-regular fa-file-code"></i></span>
+              <span id="editorFilePath" class="font-mono text-xs text-slate-200 truncate" title="Select a file to inspect">No file selected</span>
+              <span id="editorLangBadge" class="hidden px-1.5 py-0.2 rounded text-[9px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">FILE</span>
+              <span id="editorFileSize" class="hidden text-[10px] text-slate-500 font-mono"></span>
+            </div>
+
+            <div id="editorActions" class="hidden flex items-center gap-1.5">
+              <button id="btnToggleEditMode" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition flex items-center gap-1">
+                <i class="fa-solid fa-pen-to-square text-[10px]"></i> <span>Edit</span>
+              </button>
+              <button id="btnSaveFileSandbox" title="Save changes directly into sandbox" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-medium transition flex items-center gap-1">
+                <i class="fa-solid fa-cloud-arrow-up text-[10px]"></i> <span>Save</span>
+              </button>
+              <button id="btnCopyCode" title="Copy code" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+              <button id="btnDownloadFile" title="Download file" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                <i class="fa-solid fa-download"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Editor Body -->
+          <div id="editorBody" class="flex-1 relative overflow-hidden flex flex-col">
+            <!-- Empty State -->
+            <div id="editorEmptyState" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500 space-y-2">
+              <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-lg">
+                <i class="fa-solid fa-code"></i>
+              </div>
+              <h4 class="text-xs font-semibold text-slate-300">Sandbox Code Viewer & Editor</h4>
+              <p class="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                Click any file in the tree to inspect its contents with syntax highlighting, or click <strong>Sync</strong> to refresh files from the container.
+              </p>
+            </div>
+
+            <!-- Syntax Viewer with Line Numbers -->
+            <div id="editorViewerContainer" class="hidden flex-1 overflow-auto custom-scrollbar font-mono text-xs flex bg-[#282c34]">
+              <div id="editorLineNumbers" class="py-3 pl-2.5 pr-2.5 text-right select-none text-slate-600 bg-slate-950/40 border-r border-slate-800/80 sticky left-0 text-[10px] leading-[20px]"></div>
+              <pre class="m-0 p-3 flex-1 text-[10px] leading-[20px] overflow-visible bg-transparent"><code id="editorCodeBlock" class="hljs bg-transparent p-0"></code></pre>
+            </div>
+
+            <!-- Editable Textarea -->
+            <div id="editorEditContainer" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-950">
+              <textarea
+                id="editorTextarea"
+                spellcheck="false"
+                class="flex-1 w-full bg-slate-950 text-slate-200 font-mono text-xs p-3 leading-[20px] focus:outline-none resize-none custom-scrollbar"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB VIEW 2: Configure Active Agent & Sandbox Environment -->
+      <div id="rightTabConfig" class="hidden flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        
+        <!-- Active Agent Summary Banner -->
+        <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white font-mono" id="configAgentIdDisplay">antigravity-preview-05-2026</span>
+              <span id="configAgentTypeDisplay" class="px-1.5 py-0.2 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">Base Agent</span>
+            </div>
+            <p id="configAgentDescDisplay" class="text-[11px] text-slate-400 mt-0.5">Foundational agent with autonomous Linux sandbox execution</p>
+          </div>
+          <span class="text-xs text-blue-400"><i class="fa-solid fa-circle-check"></i> Active</span>
+        </div>
+
+        <!-- System Instructions Section -->
+        <div class="p-3.5 rounded-xl bg-slate-800/20 border border-slate-800/80 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <i class="fa-solid fa-scroll text-amber-400"></i> System Instruction
+            </label>
+            <span class="text-[10px] text-slate-400">Quick Presets:</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" class="preset-prompt px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-preset="analyst">
+              📊 Data Analyst
+            </button>
+            <button type="button" class="preset-prompt px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-preset="researcher">
+              🌐 Web Researcher
+            </button>
+            <button type="button" class="preset-prompt px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-preset="engineer">
+              🛠️ Systems Engineer
+            </button>
+          </div>
+
+          <textarea
+            id="systemInstructionInput"
+            rows="4"
+            class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none custom-scrollbar"
+            placeholder="System instruction for the active agent..."
+          ></textarea>
+        </div>
+
+        <!-- Built-in Tools & MCP Servers Accordion -->
+        <details class="group rounded-xl bg-slate-800/20 border border-slate-800/80 overflow-hidden" open>
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-wrench text-emerald-400"></i> Enabled Tools & MCP Servers
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3.5 pt-0 space-y-3 border-t border-slate-800/60 mt-1">
+            <div class="space-y-2 mt-2">
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                <input type="checkbox" id="toolCodeExec" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <span><i class="fa-brands fa-python text-yellow-400 mr-1"></i> Python Code & Bash Execution</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                <input type="checkbox" id="toolGoogleSearch" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <span><i class="fa-brands fa-google text-blue-400 mr-1"></i> Google Search Grounding</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                <input type="checkbox" id="toolUrlContext" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <span><i class="fa-solid fa-link text-indigo-400 mr-1"></i> URL Context (Fetch Webpages)</span>
+              </label>
+            </div>
+
+            <!-- MCP Servers -->
+            <div class="pt-2 border-t border-slate-800/60">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-medium text-slate-400"><i class="fa-solid fa-network-wired text-emerald-400 mr-1"></i>MCP Servers:</span>
+                <button type="button" id="btnAddMcpServer" class="text-[10px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+                  <i class="fa-solid fa-plus text-[9px]"></i> Add MCP
+                </button>
+              </div>
+              <div id="mcpServersContainer" class="space-y-2"></div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Cloud Storage (GCS) Mount Accordion -->
+        <details class="group rounded-xl bg-slate-800/20 border border-slate-800/80 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-database text-yellow-400"></i> Cloud Storage (GCS) Mount
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3.5 pt-0 space-y-3 border-t border-slate-800/60 mt-1">
+            <div class="flex items-center justify-between mt-2">
+              <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" id="enableGcsMount" class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <span>Mount GCS Bucket in Sandbox</span>
+              </label>
+              <span id="bucketCountBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">0 buckets</span>
+            </div>
+
+            <div id="gcsFields" class="space-y-2.5 opacity-50 pointer-events-none transition-opacity">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Select Existing Bucket:</label>
+                <div class="flex gap-1.5">
+                  <select id="selectGcsBucket" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+                    <option value="">-- Select bucket --</option>
+                  </select>
+                  <button type="button" id="btnRefreshBuckets" title="Refresh buckets in project" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                  <button type="button" id="btnToggleCreateBucket" title="Create a new GCS bucket in project" class="px-2 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg text-xs border border-blue-500/30">
+                    <i class="fa-solid fa-plus"></i> New
+                  </button>
+                </div>
+              </div>
+
+              <!-- Inline Create Bucket Panel -->
+              <div id="createBucketPanel" class="hidden p-2.5 rounded-lg bg-slate-950 border border-blue-500/40 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold text-blue-400 flex items-center gap-1">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Create Bucket
+                  </span>
+                  <button type="button" id="btnCloseCreateBucket" class="text-slate-400 hover:text-slate-200 text-xs">
+                    <i class="fa-solid fa-times"></i>
+                  </button>
+                </div>
+                <input type="text" id="newBucketNameInput" placeholder="bucket-name-unique" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500">
+                <div class="flex gap-2">
+                  <select id="newBucketLocationSelect" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none">
+                    <option value="US">Multi-region US</option>
+                    <option value="us-central1">us-central1</option>
+                    <option value="europe-west1">europe-west1</option>
+                  </select>
+                  <button type="button" id="btnCreateBucketSubmit" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium">Create</button>
+                </div>
+                <div id="createBucketStatus" class="hidden p-1.5 rounded text-[10px]"></div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Bucket URI & Mount Target:</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="gcsBucketInput" placeholder="gs://my-bucket" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+                  <input type="text" id="gcsTargetInput" value="/.agent" placeholder="Target e.g. /.agent" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Sandbox Environment & .env / API Key Accordion -->
+        <details class="group rounded-xl bg-slate-800/20 border border-yellow-500/30 overflow-hidden" open>
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-key text-yellow-400"></i> Sandbox Environment & .env / API Key
+            </span>
+            <span id="envActiveBadge" class="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">Configured</span>
+          </summary>
+          <div class="p-3.5 pt-0 space-y-3 border-t border-yellow-500/20 mt-1">
+            <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+              Configure credentials and environment variables loaded inside the remote sandbox container:
+            </p>
+
+            <!-- Quick API Key Input -->
+            <div>
+              <label class="block text-[11px] font-medium text-slate-300 mb-1 flex items-center justify-between">
+                <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>GOOGLE_API_KEY:</span>
+                <span class="text-[10px] text-slate-500 font-mono">Synced to .env</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="envApiKeyInput"
+                  value="AIzaSyDCpX2xLQ1t6RYuqjO96zbkSqFDO_KMH_8"
+                  placeholder="AIzaSy..."
+                  class="w-full bg-slate-950 border border-slate-800 focus:border-yellow-500 rounded-lg pl-3 pr-9 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none"
+                >
+                <button
+                  type="button"
+                  id="btnToggleApiKeyVisibility"
+                  class="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300 text-xs"
+                  title="Show/Hide API Key"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Provider & Model Quick Selectors -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-medium text-slate-400 mb-1">GOOGLE_GENAI_USE_VERTEXAI</label>
+                <select id="envVertexSelect" class="w-full bg-slate-950 border border-slate-800 focus:border-yellow-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none">
+                  <option value="0" selected>0 (AI Studio API Key)</option>
+                  <option value="1">1 (Vertex AI Cloud IAM)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-medium text-slate-400 mb-1">MODEL</label>
+                <select id="envModelSelect" class="w-full bg-slate-950 border border-slate-800 focus:border-yellow-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none">
+                  <option value="gemini-3.5-flash" selected>gemini-3.5-flash</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Editable .env Textarea -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-code text-cyan-400"></i> Sandbox <code class="text-cyan-400">.env</code> File Content:
+                </label>
+                <button type="button" id="btnResetDefaultEnv" class="text-[10px] text-slate-400 hover:text-slate-200 underline">
+                  Reset Default
+                </button>
+              </div>
+              <textarea id="envContentTextarea" rows="7" class="w-full bg-slate-950 border border-slate-800 focus:border-yellow-500 rounded-lg p-2.5 text-[11px] text-emerald-400 font-mono leading-relaxed focus:outline-none custom-scrollbar" placeholder="# .env file content..."></textarea>
+            </div>
+
+            <!-- Push to Sandbox Button -->
+            <div>
+              <button type="button" id="btnApplyEnvToSandbox" class="w-full py-2 px-3 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 text-yellow-300 text-xs font-medium transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-up text-yellow-400"></i>
+                <span>Push .env to Active Sandbox</span>
+              </button>
+              <div id="applyEnvStatus" class="hidden mt-2 p-2 rounded text-[11px]"></div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Sandbox & Skills Settings Accordion -->
+        <details class="group rounded-xl bg-slate-800/20 border border-slate-800/80 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-box text-cyan-400"></i> Sandbox & Skills Settings
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3.5 pt-0 space-y-3 border-t border-slate-800/60 mt-1">
+            <div class="mt-2">
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">Network Outbound Allowlist</label>
+              <input type="text" id="networkAllowlistInput" value="*" placeholder="e.g. * or domain1.com, domain2.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+              <p class="text-[10px] text-slate-500 mt-1">Use <code>*</code> for unrestricted internet access.</p>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800/60">
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">Attach Skills</label>
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <select id="skillsTypeSelect" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+                  <option value="">No Skill Attached</option>
+                  <option value="gcs">Google Cloud Storage (GCS)</option>
+                  <option value="skill_registry">Skill Registry</option>
+                </select>
+                <input type="text" id="skillsTargetInput" value="./skills" placeholder="Target folder in sandbox" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+              </div>
+              <input type="text" id="skillsSourceInput" placeholder="GCS bucket (gs://...) or skill resource path" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+            </div>
+          </div>
+        </details>
+
+        <!-- Update Agent Config Action Button -->
+        <div class="pt-3 pb-2 border-t border-slate-800">
+          <button
+            type="button"
+            id="btnUpdateAgentConfig"
+            class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Update Agent Config</span>
+          </button>
+          <div id="updateAgentStatus" class="hidden mt-2 p-2.5 rounded-lg text-xs"></div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- MODAL 1: Create a New Agent Modal -->
+  <div id="createAgentModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-robot text-blue-400"></i> Create a New Managed Agent
+        </h3>
+        <button id="btnCloseCreateModal" class="text-slate-400 hover:text-white text-xs p-1">
+          <i class="fa-solid fa-times text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar text-xs">
+        <!-- Agent ID & Base Agent -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
+              <span>Agent ID (Unique Name):</span>
+              <button type="button" id="btnModalGenerateId" class="text-[10px] text-blue-400 hover:text-blue-300">
+                <i class="fa-solid fa-dice mr-1"></i>Generate ID
+              </button>
+            </label>
+            <input
+              type="text"
+              id="modalAgentIdInput"
+              value="my-custom-agent"
+              placeholder="e.g. data-analyst-1"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none"
+            >
+            <p class="text-[10px] text-slate-500 mt-1">Lowercase alphanumeric characters and hyphens (1-63 chars).</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Base Agent Harness:</label>
+            <input
+              type="text"
+              id="modalBaseAgentInput"
+              value="antigravity-preview-05-2026"
+              readonly
+              class="w-full bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-400 font-mono cursor-not-allowed"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Description:</label>
+            <input
+              type="text"
+              id="modalAgentDescriptionInput"
+              value="Autonomous sandbox agent with Python and web search"
+              placeholder="Brief summary of what this agent does..."
+              class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+            >
+          </div>
+        </div>
+
+        <!-- System Instructions -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">System Instruction:</label>
+          <textarea
+            id="modalSystemInstructionInput"
+            rows="3"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg p-2.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none custom-scrollbar"
+            placeholder="System prompt for the agent..."
+          >You are an autonomous AI agent running inside a managed Linux sandbox. You can execute code (Python, Bash), browse the web, read/write files in the sandbox, and perform multi-step reasoning to solve complex problems.</textarea>
+        </div>
+
+        <!-- Tools Checkboxes -->
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+          <span class="block text-[11px] font-semibold text-slate-300">Enabled Tools:</span>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="modalToolCodeExec" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+              <span><i class="fa-brands fa-python text-yellow-400 mr-1"></i> Python Code & Bash Sandbox Execution</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="modalToolGoogleSearch" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+              <span><i class="fa-brands fa-google text-blue-400 mr-1"></i> Google Search Grounding</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="modalToolUrlContext" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+              <span><i class="fa-solid fa-link text-indigo-400 mr-1"></i> URL Context (Fetch Webpages)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Accordion 1: Optional GCS Bucket Mount -->
+        <details class="group rounded-xl bg-slate-950/60 border border-slate-800 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-database text-yellow-400"></i> Cloud Storage (GCS) Mount
+              <span class="text-[10px] text-slate-500 font-normal">(Optional)</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3 pt-0 space-y-2.5 border-t border-slate-800/60 mt-1">
+            <div class="flex items-center justify-between mt-2">
+              <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" id="modalEnableGcsMount" class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <span>Mount GCS Bucket in Sandbox</span>
+              </label>
+            </div>
+            <div id="modalGcsFields" class="space-y-2 opacity-50 pointer-events-none transition-opacity">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Select Existing Bucket:</label>
+                <select id="modalSelectGcsBucket" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+                  <option value="">-- Select bucket --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Bucket URI & Mount Target:</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="modalGcsBucketInput" placeholder="gs://my-bucket" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+                  <input type="text" id="modalGcsTargetInput" value="/.agent" placeholder="Target e.g. /.agent" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Accordion 2: Optional MCP Servers -->
+        <details class="group rounded-xl bg-slate-950/60 border border-slate-800 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-network-wired text-emerald-400"></i> MCP Servers
+              <span class="text-[10px] text-slate-500 font-normal">(Optional)</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3 pt-0 space-y-2 border-t border-slate-800/60 mt-1">
+            <div class="flex items-center justify-between mt-2">
+              <span class="text-[11px] text-slate-400">Streamable HTTP MCP Servers:</span>
+              <button type="button" id="btnModalAddMcp" class="text-[10px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+                <i class="fa-solid fa-plus text-[9px]"></i> Add MCP Server
+              </button>
+            </div>
+            <div id="modalMcpServersContainer" class="space-y-2"></div>
+          </div>
+        </details>
+
+        <!-- Accordion 3: Optional Skills -->
+        <details class="group rounded-xl bg-slate-950/60 border border-slate-800 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-box text-cyan-400"></i> Attach Skills
+              <span class="text-[10px] text-slate-500 font-normal">(Optional)</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3 pt-0 space-y-2 border-t border-slate-800/60 mt-1">
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Skills Source Type</label>
+                <select id="modalSkillsTypeSelect" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+                  <option value="">No Skill Attached</option>
+                  <option value="gcs">Google Cloud Storage (GCS)</option>
+                  <option value="skill_registry">Skill Registry</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Target Sandbox Path</label>
+                <input type="text" id="modalSkillsTargetInput" value="./skills" placeholder="e.g. ./skills" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">Skill URI / Resource Path</label>
+              <input type="text" id="modalSkillsSourceInput" placeholder="gs://my-bucket/skills or registry name" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none">
+            </div>
+          </div>
+        </details>
+
+        <!-- Accordion 4: Optional Sandbox Environment & .env / API Key -->
+        <details class="group rounded-xl bg-slate-950/60 border border-yellow-500/30 overflow-hidden">
+          <summary class="flex items-center justify-between p-3 cursor-pointer select-none text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10 transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-key text-yellow-400"></i> Sandbox Environment & .env / API Key
+              <span class="text-[10px] text-yellow-500/70 font-normal">(Optional)</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-yellow-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3 pt-0 space-y-2.5 border-t border-yellow-500/20 mt-1">
+            <div class="mt-2">
+              <label class="block text-[11px] font-medium text-slate-300 mb-1 flex items-center justify-between">
+                <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>GOOGLE_API_KEY:</span>
+                <span class="text-[10px] text-slate-500 font-mono">Injected to sandbox</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="modalEnvApiKeyInput"
+                  value="AIzaSyDCpX2xLQ1t6RYuqjO96zbkSqFDO_KMH_8"
+                  placeholder="AIzaSy..."
+                  class="w-full bg-slate-900 border border-slate-800 focus:border-yellow-500 rounded-lg pl-3 pr-9 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none"
+                >
+                <button
+                  type="button"
+                  id="btnModalToggleApiKey"
+                  class="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300 text-xs"
+                  title="Show/Hide API Key"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-medium text-slate-400 mb-1">GOOGLE_GENAI_USE_VERTEXAI</label>
+                <select id="modalEnvVertexSelect" class="w-full bg-slate-900 border border-slate-800 focus:border-yellow-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none">
+                  <option value="0" selected>0 (AI Studio API Key)</option>
+                  <option value="1">1 (Vertex AI Cloud IAM)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-medium text-slate-400 mb-1">MODEL</label>
+                <select id="modalEnvModelSelect" class="w-full bg-slate-900 border border-slate-800 focus:border-yellow-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none">
+                  <option value="gemini-3.5-flash" selected>gemini-3.5-flash</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-medium text-slate-300 mb-1">
+                <i class="fa-solid fa-file-code text-cyan-400 mr-1"></i> Sandbox <code class="text-cyan-400">.env</code> File Content:
+              </label>
+              <textarea id="modalEnvContentTextarea" rows="5" class="w-full bg-slate-900 border border-slate-800 focus:border-yellow-500 rounded-lg p-2 text-[10px] text-emerald-400 font-mono leading-relaxed focus:outline-none custom-scrollbar" placeholder="# API Configuration..."></textarea>
+            </div>
+          </div>
+        </details>
+
+        <div id="modalInitStatusMessage" class="hidden p-2.5 rounded-lg text-xs"></div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800 shrink-0">
+        <button id="btnCancelCreateModal" type="button" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 transition">
+          Cancel
+        </button>
+        <button id="btnModalInitializeAgent" type="button" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/25 transition flex items-center gap-2">
+          <i class="fa-solid fa-rocket"></i>
+          <span>Initialize Agent</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Create File in Sandbox Modal -->
+  <div id="newFileModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-file-circle-plus text-blue-400"></i> Create File in Sandbox
+        </h3>
+        <button id="btnCloseNewFileModal" class="text-slate-400 hover:text-white text-xs p-1">
+          <i class="fa-solid fa-times text-sm"></i>
+        </button>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">File Path (relative to /workspace)</label>
+        <input id="newFilePathInput" type="text" placeholder="e.g. agent.py or scripts/demo.sh" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btnCancelNewFile" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 transition">Cancel</button>
+        <button id="btnConfirmNewFile" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i> Create File
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom App JavaScript -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
